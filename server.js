@@ -1,32 +1,35 @@
-//dependecys
-require("dotenv").config();
-const express = require("express");
-const app = express();
-const expressLayouts = require("express-ejs-layouts");
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').load()
+}
 
-//imports
-const Router = require("./routes/index");
-const authorRouter = require("./routes/author");
-const ConnectDb = require("./Db");
-//setup
-app.set("view engine", "ejs");
-app.set("views", __dirname + "/views");
-app.set("layout", "layouts/layout");
-app.use(expressLayouts);
-app.use(express.static("public"));
-// middlewares
-app.use(express.urlencoded({ limit: "10mb", extended: true }));
-app.use(express.json());
+const express = require('express')
+const app = express()
+const expressLayouts = require('express-ejs-layouts')
+const bodyParser = require('body-parser')
+const methodOverride = require('method-override')
 
-// Db config
-ConnectDb();
+const indexRouter = require('./routes/index')
+const authorRouter = require('./routes/authors')
+const bookRouter = require('./routes/books')
 
-//Routes
-app.use("/", Router);
-app.use("/authors", authorRouter);
+app.set('view engine', 'ejs')
+app.set('views', __dirname + '/views')
+app.set('layout', 'layouts/layout')
+app.use(expressLayouts)
+app.use(methodOverride('_method'))
+app.use(express.static('public'))
+app.use(bodyParser.urlencoded({ limit: '10mb', extended: false }))
 
-// Server is listen
-const PORT = process.env.port || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on:${PORT}`);
-});
+const mongoose = require('mongoose')
+mongoose.connect(process.env.DB, { useNewUrlParser: true })
+const db = mongoose.connection
+db.on('error', error => console.error(error))
+db.once('open', () => console.log('Connected to Mongoose'))
+
+app.use('/', indexRouter)
+app.use('/authors', authorRouter)
+app.use('/books', bookRouter)
+
+app.listen(process.env.PORT || 3000,()=>{
+  console.log("Server is running")
+})
